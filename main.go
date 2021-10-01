@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -87,7 +88,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "4040"
 	}
 
 	r := mux.NewRouter()
@@ -97,5 +98,7 @@ func main() {
 	r.HandleFunc("/patient/{id}", PatientHandler)
 	r.HandleFunc("/patient", PatientsIndexHandler)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	fmt.Println("Server is running on port: http://localhost:4040/" + port)
+
+	log.Fatal(http.ListenAndServe(":" + port, r))
 }
