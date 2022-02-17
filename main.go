@@ -2,103 +2,78 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-chi/chi"
+	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/samply/golang-fhir-models/fhir-models/fhir"
-	model "github.com/samply/golang-fhir-models/fhir-models/fhir"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-var patients = make([]model.Patient, 20)
+type PatientReq struct {
+	Patient fhir.Patient `json:"patient"`
+}
 
-func PatientHandler(w http.ResponseWriter, r *http.Request) {
+func main() {
+	r := chi.NewRouter()
 
-	id := "12"
-	given := "Shane"
-	family := "Early"
-	var NameUse fhir.NameUse = 0
-	nameEnd := "2012"
-	phone := "1234567890"
-	current := time.Now().String()
-	active := true
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	for i := 0; i < 20; i++ {
-		patients[i] = model.Patient{
-			Id: &id,
-			Meta: &model.Meta{
-				LastUpdated: &current,
-				VersionId: &id,
-				Extension: []model.Extension{
-					{
-						Url: "http://hl7.org/fhir/StructureDefinition/us-core-patient-birthDate",
-						Id:  &id,
-						Extension: []model.Extension{
-							{
-								Url: "http://hl7.org/fhir/StructureDefinition/us-core-birthDate",
-							},
-						},
-					},
-				},
-			},
-			Name: []model.HumanName{
-				{
-					Use: &NameUse,
-					Family: &given,
-					Given:  []string{family},
-					Period: &model.Period{
-						End:  &nameEnd,
-					},
-				},
-			},
-			Telecom: []model.ContactPoint{
-				{
-					Id: &id,
-					Value: &phone,
-				},
-			},
-			Active: &active,
-		}
-		vars := mux.Vars(r)
+	r.Use(middleware.Timeout(60 * time.Second))
 
-		id = vars["id"]
+	r.Route("/v1", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("Lite FHIR Server - v1"))
+		})
+		r.Get("/patient/{id}", func(w http.ResponseWriter, r *http.Request) {
 
-		for _, patient := range patients {
-			if *patient.Id == id {
-				w.WriteHeader(http.StatusOK)
-				m, _ := patient.MarshalJSON()
-				w.Write([]byte(m))
+			id := chi.URLParam(r, "id")
+
+			fmt.Println(id)
+
+			var patient fhir.Patient
+
+			injson, err := patient.MarshalJSON()
+
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-		}
-	}
-}
+			w.Write(injson)
+		})
 
-func PatientsIndexHandler(w http.ResponseWriter, r *http.Request) {
+		r.Post("/patient", func(w http.ResponseWriter, r *http.Request) {
+			var patient fhir.Patient
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"resourceType":"Bundle","entry":[{"resourceType":"Patient"}]}`))
-}
+			fmt.Println(patient)
+			fmt.Println(r.Body)
 
-func Index(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Consensus Networks <> FHIR Proxy!\n"))
-}
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "4040"
-	}
+			injson, err := patient.MarshalJSON()
 
-	r := mux.NewRouter()
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
-	
-	r.HandleFunc("/", Index)
-	r.HandleFunc("/patient/{id}", PatientHandler)
-	r.HandleFunc("/patient", PatientsIndexHandler)
+			w.Write(injson)
+		})
+	})
 
-	fmt.Println("Server is running on port: http://localhost:4040/" + port)
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte("Resource not found"))
+	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(405)
+		w.Write([]byte("Noop"))
+	})
+	fmt.Println("Server running: http://127.0.0.1:4141/")
 
-	log.Fatal(http.ListenAndServe(":" + port, r))
+	http.ListenAndServe(":3000", r)
 }
