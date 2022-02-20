@@ -1,25 +1,45 @@
-### Lite FHIR Server
+## fhir
 
-> Lightweight FHiR Server for use in testing and development
+> FHIR server for testing purposes 💅
 
+FHIR Server following the on the [FHIR Version R4](http://hl7.org/fhir/R4/index.html) for testing.
 
 ## Usage
 
-1. Clone repo
+Clone
+
 ```bash
-git clone <repo>
+git clone https://github.com/hawyar/fhir
 ```
 
-2. Sync dependencies
+Sync dependencies
+
 ```bash
 go mod tidy
 ```
 
-3. Start server
+Start the server. Runs on port `4141`
+
 ```bash
-go run main.go
+make server
 ```
 
+Now start the reverse proxy (using Caddy) on `8080`
 
+```bash
+make proxy
+```
 
+Before creating any resource check if the server is running
 
+```bash
+curl http://127.0.0.1:8080/ping
+```
+
+### FHIR Resources
+
+Create a new patient
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"resourceType": "Patient", "name": [{"given": ["John"], "family": "Doe"}]}' http://localhost:4141/v1/Patient
+```
