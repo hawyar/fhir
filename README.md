@@ -2,6 +2,7 @@
 
 > FHIR server for testing purposes 💅
 
+ 
 FHIR Server following the on the [FHIR Version R4](http://hl7.org/fhir/R4/index.html) for testing.
 
 ## Usage
@@ -38,8 +39,14 @@ curl http://127.0.0.1:8080/ping
 
 ### FHIR Resources
 
+
+
+### Capability Statement
+```bash
+curl http://127.0.0.1:8080/v1/metadata
+```
 Create a new patient
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"resourceType": "Patient", "name": [{"given": ["John"], "family": "Doe"}]}' http://localhost:4141/v1/Patient
+curl -X POST -H "Content-Type: application/json" -d '{"resourceType": "Patient", "name": [{"given": ["John"], "family": "Doe"}]}' http://localhost:8080/v1/Patient
 ```
