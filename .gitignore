@@ -1,6 +1,7 @@
-tmp
 .idea
 .env
 *.db
 *.log
 node_modules
+dump.rdb
+fhir

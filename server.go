@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"log"
 	"net/http"
 	"os"
@@ -31,8 +32,9 @@ func main() {
 	r.Use(middleware.Heartbeat("/ping"))
 
 	r.With(formatCtx).Route("/v1", func(r chi.Router) {
-		r.Route("/Patient", func(r chi.Router) {
-			r.With(PatientCtx).Post("/", NewPatientHandler)
+		r.With(patientCtx).Route("/Patient", func(r chi.Router) {
+			r.Post("/", NewPatientHandler)
+			r.Get("/{id}", GetPatientHandler)
 		})
 		r.Get("/metadata", CapabilityStmt)
 	})
@@ -109,14 +111,72 @@ func formatCtx(next http.Handler) http.Handler {
 	})
 }
 
-func PatientCtx(next http.Handler) http.Handler {
+func patientCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Body == nil {
 			http.Error(w, "Please send a request body", 400)
 			return
 		}
+
+		if r.Method == "GET" {
+			id := chi.URLParam(r, "id")
+
+			if id == "" {
+				http.Error(w, "Please provide an id", 400)
+				return
+			}
+
+			fmt.Println(id)
+
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, "id", id)
+		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func GetPatientHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var patient fhir.Patient
+
+	pat := Get(id)
+
+	if pat == "" {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Resource not found"))
+	}
+
+	err := json.Unmarshal([]byte(pat), &patient)
+
+	format := r.Context().Value("format").(string)
+
+	if format == "xml" {
+		xml, err := xml.Marshal(patient)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(fmt.Sprintf("%s", err)))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/fhir+xml")
+		w.WriteHeader(http.StatusOK)
+		w.Write(xml)
+		return
+	}
+
+	json, err := json.Marshal(patient)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/fhir+json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(json)
 }
 func NewPatientHandler(w http.ResponseWriter, r *http.Request) {
 	patient, err := CreatePatient(r)
@@ -127,17 +187,15 @@ func NewPatientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//client := pool.Get()
-	//_, err = client.Do("SET", patient.Id, patient)
-
-	//defer client.Close()
+	json, err := json.Marshal(patient)
 
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(500)
-		w.Write([]byte("Internal Server Error"))
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	Set(*patient.Id, string(json))
 
 	format := r.Context().Value("format").(string)
 
@@ -154,36 +212,6 @@ func NewPatientHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(xml)
 		return
 	}
-
-	json, err := json.Marshal(patient)
-
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	client := pool.Get()
-
-	res, err := client.Do("SET", *patient.Id, string(json))
-
-	defer client.Close()
-
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Println(res)
-
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Println(res)
 
 	w.Header().Set("Content-Type", "application/fhir+json")
 	w.WriteHeader(http.StatusCreated)

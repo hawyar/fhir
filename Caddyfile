@@ -1,7 +1,7 @@
 :8080
 
-reverse_proxy 127.0.0.1:4141
+reverse_proxy fhir_fhir_1:4141
 
 log {
-	format console
+	format json
 }

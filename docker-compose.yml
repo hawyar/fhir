@@ -1,0 +1,35 @@
+
+version: "3.9"
+services:
+  redis:
+    image: "redislabs/rejson:latest"
+    ports:
+      - "6379:6379"
+
+  fhir:
+    build: .
+    ports:
+      - "4141:4141"
+
+  redis-insight:
+    image: "redislabs/redisinsight:latest"
+    ports:
+      - "8001:8001"
+
+  caddy:
+    image: caddy:2.4.6-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+        - $PWD/Caddyfile:/etc/caddy/Caddyfile
+        - $PWD/site:/srv
+        - caddy_data:/data
+        - caddy_config:/config
+
+volumes:
+  caddy_data:
+    external: true
+  caddy_config:
