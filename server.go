@@ -36,6 +36,11 @@ func main() {
 			r.Post("/", NewPatientHandler)
 			r.Get("/{id}", GetPatientHandler)
 		})
+
+		r.Route("/Procedure", func(r chi.Router) {
+			r.Post("/", NewProcedureHandler)
+		})
+
 		r.Get("/metadata", CapabilityStmt)
 	})
 
@@ -195,12 +200,57 @@ func NewPatientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Set(*patient.Id, string(json))
+	// Set(*patient.Id, string(json))
 
 	format := r.Context().Value("format").(string)
 
 	if format == "xml" {
 		xml, err := xml.Marshal(patient)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(fmt.Sprintf("%s", err)))
+			return
+		}
+		w.Header().Set("Content-Type", "application/fhir+xml")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(xml)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/fhir+json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(json)
+}
+
+func NewProcedureHandler(w http.ResponseWriter, r *http.Request) {
+
+	procedure, err := CreateProcedure(r)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("%s", err)))
+		return
+	}
+
+	patientId := NewID()
+	procedure.Subject.Reference = &patientId
+
+	json, err := json.Marshal(procedure)
+	fmt.Print(string(json))
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	Set(*patient.Id, string(json))
+
+	format := r.Context().Value("format").(string)
+
+	if format == "xml" {
+		xml, err := xml.Marshal(procedure)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

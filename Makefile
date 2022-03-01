@@ -4,16 +4,13 @@ redis:
 redis-insight:
 	docker run -v redisinsight:/db -p 8001:8001 redislabs/redisinsight:latest
 
-
 build:
 	go build -o fhir
 
 server:
 	docker run --name -p 4141:4141
 
-proxy:
-	caddy run
-
-
+dev:
+	go build -o fhir && ./fhir
 
 #docker build -t fhir-server .
