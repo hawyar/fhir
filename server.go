@@ -51,7 +51,7 @@ func main() {
 
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(405)
-		w.Write([]byte("Noop"))
+		w.Write([]byte("Method not allowed"))
 	})
 
 	fmt.Println("Server: http://127.0.0.1:4141/")
@@ -227,17 +227,7 @@ func NewProcedureHandler(w http.ResponseWriter, r *http.Request) {
 
 	procedure, err := CreateProcedure(r)
 
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("%s", err)))
-		return
-	}
-
-	patientId := NewID()
-	procedure.Subject.Reference = &patientId
-
 	json, err := json.Marshal(procedure)
-	fmt.Print(string(json))
 
 	if err != nil {
 		log.Println(err)

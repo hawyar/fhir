@@ -1,84 +1,44 @@
-## fhir
+## FHIR
 
 > FHIR server for testing purposes
 
-This is an implementation of [FHIR Version R4](http://hl7.org/fhir/R4/index.html) - a high level specification for healthcare data exchange.
-
+This is an implementation of [FHIR Version R4](http://hl7.org/fhir/R4/index.html) - a spec for healthcare data exchange.
 
 ## Prerequisites
 
- - [Go](https://golang.org/doc/install)
- - [Docker](https://www.docker.com/community-edition)
- - [Redis](https://redis.io/topics/quickstart)
- 
+-   [Go](https://golang.org/doc/install)
+-   [Docker](https://www.docker.com/community-edition)
+-   [Redis](https://redis.io/topics/quickstart)
 
 ## Setup
+
 1. Clone repo
+
 ```bash
 git clone https://github.com/hawyar/fhir
 ```
 
-2. Download dependencies
+2. Start containers in background
 
 ```bash
-go mod download
+docker-compose build --no-cache && docker-compose up -d
 ```
 
-3. Start docker containers in background
-
-```bash
-docker-compose up -d
-```
-#### Now the FHIR server is available at [`http://localhost:8080/`](http://127.0.0.1:8080/)
-
-
-
+**Server available at:** `http://localhost:8080/v1/`
 
 ## Usage
 
-Make sure the server is running.
+The FHIR server provides a RESTful API to access and exchange healthcare data. The base URL serves as the root of the FHIR server. The `v1` refers to the server's version **NOT** the FHIR spec in use. To access the different resources just append the resource name to the base URL.
 
-```bash
-curl http://localhost:8080/ping
-```
+**Base URL**: `http://localhost:8080/v1/`
 
-### FHIR Server
-The FHIR server provides a REST API to access the data. It supports XML and JSON output formats.
+### Currently supported resources:
 
-### Base Url
+-   [`Patient`](http://hl7.org/fhir/R4/patient.html): `http://localhost:8080/v1/Patient`
+-   [`Procedure`](http://hl7.org/fhir/R4/patient.html): `http://localhost:8080/v1/Procedure`
+-   [`CapabilityStatement`](http://hl7.org/fhir/R4/capabilitystatement.html): `http://localhost:8080/v1/metadata`
 
-The base url is the root of the FHIR server. After that you can access the resources by adding the name as a path. Also notice the upper case resource path names.
-
-**Base Url**: `http://localhost:8080/v1`
-
-
-For example to access the [`Patient`](http://hl7.org/fhir/R4/patient.html): 
-
-**Patient**: `http://localhost:8080/v1/Patient`
-
-or [`CapabilityStatement`](http://hl7.org/fhir/R4/capabilitystatement.html):
-
-**CapabilityStatement**: `http://localhost:8080/v1/metadata`
-
-
-### Format
-
-By default the server returns in JSON format. You can change that by adding the `_format` parameter to the url.
-Supported formats are:
-
-
-Patient in xml format: `http://localhost:8080/v1/Patient?_format=xml`
-
-Patient in json format: `http://localhost:8080/v1/Patient?_format=json`
-
-
-### Other examples:
-
-Get the capabilities statement of the server:
-
-```bash
-curl http://127.0.0.1:8080/v1/metadata
-```
+### Usage
 
 Create a new patient
 
@@ -86,6 +46,8 @@ Create a new patient
 curl -X POST -H "Content-Type: application/json" -d '{"resourceType": "Patient", "name": [{"given": ["John"], "family": "Doe"}]}' http://localhost:8080/v1/Patient
 ```
 
-### Supported Resources (wip)
-- Patient
-- CapabilityStatement
+or a new procedure
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"subject":{"reference":"25oYHe8zCfx52wp9S8RKEVjEyTw"}}' http://localhost:8080/v1/Patient
+```

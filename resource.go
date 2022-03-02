@@ -44,37 +44,18 @@ func CreateProcedure(r *http.Request) (fhir.Procedure, error) {
 		fmt.Println(err)
 		return procedure, err
 	}
+
 	id := NewID()
+
 	procedure.Id = &id
 
-	sys := "https://example.com/"
-
-	identifier := fhir.Identifier{
-		System: &sys,
-		Value:  &id,
-	}
-
-	var identifiers []fhir.Identifier
-
-	procedure.Identifier = append(identifiers, identifier)
-	
-	// just for demo purposes
-	code := "http://demo.info/"
-	system := "http://demo.info/"
-	display := "Procedure"
-
-	singleCoding := fhir.Coding{
-		System:  &system,
-		Code:    &code,
-		Display: &display,
-	}
-
-	procedure.Category = &fhir.CodeableConcept{
-		Coding: []fhir.Coding{singleCoding},
+	if procedure.Subject.Reference == nil {
+		ref := NewID()
+		procedure.Subject.Reference = &ref
 	}
 
 	bilboa := "Bilboa Medical Hospital"
-	locId := "1"
+	locId := "12"
 
 	location := fhir.Location{
 		Id:   &locId,
@@ -85,6 +66,7 @@ func CreateProcedure(r *http.Request) (fhir.Procedure, error) {
 		Reference: location.Id,
 		Display:   &bilboa,
 	}
+
 	return procedure, nil
 }
 
