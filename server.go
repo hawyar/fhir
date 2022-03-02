@@ -200,7 +200,7 @@ func NewPatientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set(*patient.Id, string(json))
+	Set(*patient.Id, string(json))
 
 	format := r.Context().Value("format").(string)
 
@@ -245,7 +245,7 @@ func NewProcedureHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Set(*patient.Id, string(json))
+	Set(*procedure.Id, string(json))
 
 	format := r.Context().Value("format").(string)
 

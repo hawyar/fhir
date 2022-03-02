@@ -2,18 +2,21 @@ package main
 
 import (
 	"github.com/gomodule/redigo/redis"
+	"log"
 )
 
 func NewPool() *redis.Pool {
+	client, err := redis.Dial("tcp", "redis:6379")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &redis.Pool{
-		MaxIdle:   80,
-		MaxActive: 12000,
+		MaxIdle:   3,
+		MaxActive: 10,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", "redis:6379")
-			if err != nil {
-				panic(err.Error())
-			}
-			return c, err
+			return client, nil
 		},
 	}
 }
