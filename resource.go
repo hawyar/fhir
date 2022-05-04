@@ -9,6 +9,28 @@ import (
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 )
 
+func NewCapabilityStatement(cap fhir.CapabilityStatement) (fhir.CapabilityStatement, error) {
+	id := NewID()
+	cap.Id = &id
+	return cap, nil
+}
+
+func CreateCapabilityStatement(r *http.Request) (fhir.CapabilityStatement, error) {
+	var capabilityStatement fhir.CapabilityStatement
+
+	if r == nil {
+		return capabilityStatement, nil
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&capabilityStatement)
+
+	if err != nil {
+		return capabilityStatement, err
+	}
+
+	return capabilityStatement, nil
+}
+
 func CreatePatient(r *http.Request) (fhir.Patient, error) {
 	var patient fhir.Patient
 
@@ -18,14 +40,15 @@ func CreatePatient(r *http.Request) (fhir.Patient, error) {
 		return patient, err
 	}
 
-	id := NewID()
-
-	patient.Id = &id
+	if patient.Id == nil {
+		id := NewID()
+		patient.Id = &id
+	}
 
 	sys := "https://example.com/"
 	identifier := fhir.Identifier{
 		System: &sys,
-		Value:  &id,
+		Value:  patient.Id,
 	}
 
 	var identifiers []fhir.Identifier
@@ -70,35 +93,88 @@ func CreateProcedure(r *http.Request) (fhir.Procedure, error) {
 	return procedure, nil
 }
 
-func GetCapabilityStatement(_ *http.Request) (fhir.CapabilityStatement, error) {
-	var capabilityStatement fhir.CapabilityStatement
+// NewMeta instantiates a new Meta object carried by each resource. See https://www.hl7.org/fhir/resource.html#metadata
+func NewMeta() (fhir.Meta, error) {
+	meta := fhir.Meta{}
+	return meta, nil
+}
 
-	url := "http://127.0.0.1:8080/v1/metadata"
-	title := "Capability Statement for FHIR Server"
-	purpose := "Main EHR capability statement, published for contracting and operational support"
-	name := "fhir-test-server"
-	publisher := "Consensus Networks"
-	experimental := true
-	version := "1.0.0"
+func NewObservation(r *http.Request) (fhir.Observation, error) {
+	var observation fhir.Observation
 
-	capabilityStatement = fhir.CapabilityStatement{
-		Name:         &name,
-		Id:           nil,
-		Url:          &url,
-		Purpose:      &purpose,
-		Title:        &title,
-		FhirVersion:  fhir.FHIRVersion4_0_1,
-		Experimental: &experimental,
-		Publisher:    &publisher,
-		Status:       fhir.PublicationStatusDraft,
-		Date:         time.Now().Format(time.RFC3339),
-		Kind:         fhir.CapabilityStatementKindCapability,
-		Software: &fhir.CapabilityStatementSoftware{
-			Name:    "FHIR Test Server",
-			Version: &version,
-		},
-		Format: []string{"application/json+fhir", "application/xml+fhir"},
+	err := json.NewDecoder(r.Body).Decode(&observation)
+
+	if err != nil {
+		return observation, err
 	}
 
-	return capabilityStatement, nil
+	// id := NewID()
+
+	// observation.Id = &id
+
+	// if observation.Subject.Reference == nil {
+	// 	ref := NewID()
+	// 	observation.Subject.Reference = &ref
+	// }
+
+	return observation, nil
+}
+
+func NewLocation(r *http.Request) (fhir.Location, error) {
+	var location fhir.Location
+
+	err := json.NewDecoder(r.Body).Decode(&location)
+
+	if err != nil {
+		return location, err
+	}
+
+	id := NewID()
+
+	location.Id = &id
+
+	return location, nil
+}
+
+// NewBasic created a special type of resource. It doesn't correspond to a specific pre-defined HL7 concept.
+// Instead, it's a placeholder for any resource-like concept that isn't already defined in the HL7 specification.
+func NewBasic(r *http.Request) (fhir.Basic, error) {
+	var basic fhir.Basic
+
+	err := json.NewDecoder(r.Body).Decode(&basic)
+
+	if err != nil {
+		return basic, err
+	}
+
+	id := NewID()
+	createdAt := time.Now().Format(time.RFC3339)
+
+	basic.Id = &id
+	basic.Created = &createdAt
+
+	return basic, nil
+}
+
+// NewOrganization creates a new Organization resource.
+// The Organization resource is used for collections of people that have come together to achieve an objective.
+func NewOrganization(r *http.Request) (fhir.Organization, error) {
+	var organization fhir.Organization
+
+	err := json.NewDecoder(r.Body).Decode(&organization)
+
+	if err != nil {
+		return organization, err
+	}
+
+	orgName := "FHIR Hospital"
+	id := NewID()
+	active := true
+
+	organization.Name = &orgName
+	organization.Id = &id
+	organization.Active = &active
+	organization.Alias = append(organization.Alias, orgName, "Demo", "FHIR", "Hospital")
+
+	return organization, nil
 }
