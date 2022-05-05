@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -57,8 +57,7 @@ func NewServer() *Server {
 	}
 }
 
-func main() {
-	server := NewServer()
+func (server *Server) Run() {
 
 	server.Config = config
 

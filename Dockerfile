@@ -4,16 +4,21 @@ FROM golang:1.18
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-COPY config.json ./
+COPY /server/*.go /app/server
+
+COPY go.mod /app
+COPY go.sum /app
+
+COPY /*.go /app
+
+COPY Caddyfile /app/Caddyfile
+
+COPY *.go /app
 
 RUN go mod download
 
-COPY *.go ./
-
-RUN go build -o /fhir
+RUN go build -o server
 
 EXPOSE 4141
 
-CMD ["/fhir"]
+CMD ["/server"]

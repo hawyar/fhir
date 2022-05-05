@@ -1,8 +1,9 @@
-package main
+package server
 
 import (
-	"github.com/gomodule/redigo/redis"
 	"log"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 func NewPool() *redis.Pool {

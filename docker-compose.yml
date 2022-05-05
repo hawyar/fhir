@@ -3,6 +3,7 @@ version: "3.9"
 services:
   fhir:
     build: .
+    container_name: fhir_server
     ports:
       - "4141:4141"
     depends_on:
