@@ -1,7 +1,6 @@
-package server
+package main
 
 import (
-	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -13,8 +12,39 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-func PostCapabilityStatementHandler(w http.ResponseWriter, r *http.Request) {
-	capStmt, err := CreateCapabilityStatement(r)
+func GetCapabilityStatementHandler(w http.ResponseWriter, r *http.Request) {
+	stmt, err := NewCapabilityStatement()
+
+	serverVersion := "1.0.0"
+	description := "HL7 FHIR Server"
+	experimental := true
+	publisher := "Acme"
+	supportedFormats := []string{"json", "xml"}
+
+	// RESTful Conformance Statement, update as we go
+	rest := fhir.CapabilityStatementRest{
+		Mode: fhir.RestfulCapabilityModeServer,
+		Resource: []fhir.CapabilityStatementRestResource{
+			{
+				Type: fhir.ResourceTypePatient,
+			},
+		},
+	}
+
+	// See http://hl7.org/fhir/R4/valueset-FHIR-version.html
+
+	if config.FHIRVersion == "R4" {
+		stmt.FhirVersion = fhir.FHIRVersion4_0_1
+	} else {
+		stmt.FhirVersion = fhir.FHIRVersion3_0_1
+	}
+
+	stmt.Version = &serverVersion
+	stmt.Description = &description
+	stmt.Experimental = &experimental
+	stmt.Publisher = &publisher
+	stmt.Format = supportedFormats
+	stmt.Rest = []fhir.CapabilityStatementRest{rest}
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -24,7 +54,21 @@ func PostCapabilityStatementHandler(w http.ResponseWriter, r *http.Request) {
 
 	format := r.Context().Value("format").(string)
 
-	json, err := json.Marshal(capStmt)
+	if format == "xml" {
+		xml, err := xml.Marshal(stmt)
+
+		if err != nil {
+			log.Fatal(err)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(fmt.Sprintf("%s", err)))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(xml)
+		return
+	}
+
+	json, err := json.Marshal(stmt)
 
 	if err != nil {
 		log.Println(err)
@@ -32,82 +76,102 @@ func PostCapabilityStatementHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := "CapabilityStatement-" + *capStmt.Name
-
-	Set(key, string(json))
-
-	if format == "xml" {
-		xml, err := xml.Marshal(capStmt)
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("%s", err)))
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		w.Write(xml)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	w.Write(json)
-	return
+
 }
 
-// func GetCapabilityStatement(_ *http.Request) (fhir.CapabilityStatement, error) {
-// 	// check the
+// func PostCapabilityStatementHandler(w http.ResponseWriter, r *http.Request) {
+// 	capStmt, err := CreateCapabilityStatement(r)
+
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte(fmt.Sprintf("%s", err)))
+// 		return
+// 	}
+
+// 	format := r.Context().Value("format").(string)
+
+// 	json, err := json.Marshal(capStmt)
+
+// 	if err != nil {
+// 		log.Println(err)
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	key := "CapabilityStatement-" + *capStmt.Name
+
+// 	Set(key, string(json))
+
+// 	if format == "xml" {
+// 		xml, err := xml.Marshal(capStmt)
+
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			w.Write([]byte(fmt.Sprintf("%s", err)))
+// 			return
+// 		}
+
+// 		w.WriteHeader(http.StatusCreated)
+// 		w.Write(xml)
+// 		return
+// 	}
+
+// 	w.WriteHeader(http.StatusCreated)
+// 	w.Write(json)
+// 	return
 // }
 
-func NewPatientCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var patient fhir.Patient
+// func NewPatientCtx(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		var patient fhir.Patient
 
-		err := json.NewDecoder(r.Body).Decode(&patient)
+// 		err := json.NewDecoder(r.Body).Decode(&patient)
 
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("%s", err)))
-			return
-		}
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			w.Write([]byte(fmt.Sprintf("%s", err)))
+// 			return
+// 		}
 
-		empty := ""
+// 		empty := ""
 
-		if patient.Id == &empty {
-			id := NewID()
-			patient.Id = &id
-		}
+// 		if patient.Id == &empty {
+// 			id := NewID()
+// 			patient.Id = &id
+// 		}
 
-		ctx := context.WithValue(r.Context(), "patientID", patient)
+// 		ctx := context.WithValue(r.Context(), "patientID", patient)
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-func patientCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Body == nil {
-			http.Error(w, "Please send a request body", 400)
-			return
-		}
+// 		next.ServeHTTP(w, r.WithContext(ctx))
+// 	})
+// }
+// func patientCtx(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if r.Body == nil {
+// 			http.Error(w, "Please send a request body", 400)
+// 			return
+// 		}
 
-		if r.Method == "GET" {
-			id := chi.URLParam(r, "id")
+// 		if r.Method == "GET" {
+// 			id := chi.URLParam(r, "id")
 
-			if id == "" {
-				http.Error(w, "Please provide an id", 400)
-				return
-			}
+// 			if id == "" {
+// 				http.Error(w, "Please provide an id", 400)
+// 				return
+// 			}
 
-			fmt.Println(id)
+// 			fmt.Println(id)
 
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, "patientId", id)
+// 			ctx := r.Context()
+// 			ctx = context.WithValue(ctx, "patientId", id)
 
-			next.ServeHTTP(w, r.WithContext(ctx))
-		}
-		next.ServeHTTP(w, r)
-	})
-}
+// 			next.ServeHTTP(w, r.WithContext(ctx))
+// 		}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 func GetPatientHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "patientId")

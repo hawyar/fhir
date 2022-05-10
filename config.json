@@ -1,4 +1,5 @@
 {
-    "fhirVersion": "R4",
-    "name": "demo"
+    "fhirversion": "R4",
+    "name": "fhir-server",
+    "description": "HL7 FHIR Server"
 }

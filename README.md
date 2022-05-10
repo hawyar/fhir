@@ -1,4 +1,4 @@
-## FHIR
+## FHIR Server
 
 > FHIR server for testing purposes
 
@@ -11,21 +11,18 @@ The FHIR server provides a REST API to access and exchange healthcare data with 
 -   [Redis](https://redis.io/topics/quickstart)
 
 
-## Usage
-
-###  Setup
+## Setup
 
 1. Clone repo
 
 ```bash
-git clone https://github.com/
-hawyar/fhir
+git clone https://github.com/hawyar/fhir
 ```
 
-2. Start containers in background
+2. Start Docker containers in background
 
 ```bash
-docker-compose build --no-cache && docker-compose up -d
+make start
 ```
 
 ### Server

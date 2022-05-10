@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"fmt"
@@ -13,6 +13,22 @@ import (
 
 var pool = NewPool()
 var config = NewConfig()
+
+// Server is the main FHIR server
+type Server struct {
+	Router    *chi.Mux
+	CreatedAt time.Time
+	Config    *FHIRConfig
+	Port      string
+}
+
+// FHIRConfig loads server configf from /config.json
+type FHIRConfig struct {
+	FHIRVersion string `json:"fhirversion"`
+	Name        string `json:"name"`
+	Format      string `json:"format"`
+	Description string `json:"description"`
+}
 
 func init() {
 	viper.SetConfigFile("./config.json")
@@ -31,19 +47,12 @@ func init() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Config file loaded")
+	fmt.Println("Loaded config from file:", viper.ConfigFileUsed())
 }
 
-type Server struct {
-	Router    *chi.Mux
-	CreatedAt time.Time
-	Config    *FHIRConfig
-	Port      string
-}
-
-type FHIRConfig struct {
-	Version string `json:"FHIRVersion"`
-	Name    string `json:"name"`
+func main() {
+	server := NewServer()
+	server.Run()
 }
 
 func NewConfig() *FHIRConfig {
@@ -58,7 +67,6 @@ func NewServer() *Server {
 }
 
 func (server *Server) Run() {
-
 	server.Config = config
 
 	server.MountMiddlewares()
@@ -67,14 +75,11 @@ func (server *Server) Run() {
 
 	r := server.Router
 
-	r.Use(middleware.AllowContentType("application/fhir+json", "application/fhir+xml"))
-
 	r.Use(middleware.Heartbeat("/ping"))
 
-	r.With(ResourceFormat).Route("/v1", func(r chi.Router) {
+	r.Route("/v1", func(r chi.Router) {
 		r.Route("/metadata", func(r chi.Router) {
-			r.Post("/", PostCapabilityStatementHandler)
-			// r.Get("/", GetCapabilityStatementHandler)
+			r.Get("/", GetCapabilityStatementHandler)
 		})
 	})
 
@@ -88,12 +93,13 @@ func (server *Server) Run() {
 		w.Write([]byte("Method Not Allowed"))
 	})
 
-	fmt.Println(viper.GetViper().AllKeys())
-
-	fmt.Println("Server: http://127.0.0.1:4141/")
-
 	if os.Getenv("PORT") != "" {
 		port = ":" + os.Getenv("PORT")
 	}
+
+	fmt.Println("Server running on port", port)
+	fmt.Println("FHIR Server:" + server.Config.Name)
+	fmt.Println("version:", server.Config.FHIRVersion)
+
 	http.ListenAndServe(port, r)
 }

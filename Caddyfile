@@ -1,6 +1,6 @@
 :8080
 
-reverse_proxy fhir_fhir_1:4141
+reverse_proxy fhir:4141
 
 log {
 	format json

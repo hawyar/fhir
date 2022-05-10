@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"encoding/json"
@@ -9,26 +9,9 @@ import (
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 )
 
-func NewCapabilityStatement(cap fhir.CapabilityStatement) (fhir.CapabilityStatement, error) {
-	id := NewID()
-	cap.Id = &id
-	return cap, nil
-}
-
-func CreateCapabilityStatement(r *http.Request) (fhir.CapabilityStatement, error) {
-	var capabilityStatement fhir.CapabilityStatement
-
-	if r == nil {
-		return capabilityStatement, nil
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&capabilityStatement)
-
-	if err != nil {
-		return capabilityStatement, err
-	}
-
-	return capabilityStatement, nil
+func NewCapabilityStatement() (fhir.CapabilityStatement, error) {
+	stmt := fhir.CapabilityStatement{}
+	return stmt, nil
 }
 
 func CreatePatient(r *http.Request) (fhir.Patient, error) {
